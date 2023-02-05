@@ -20,20 +20,6 @@ public class ForgeMain extends Mod{
     public static TileHeatOverlay heatOverlay;
     public static NativeJavaPackage p;
     public ForgeMain(){
-        Log.info("Loaded ExampleJavaMod constructor.");
-
-        //listen for game load event
-        Events.on(ClientLoadEvent.class, e -> {
-            //show dialog upon startup
-            Time.runTask(10f, () -> {
-                BaseDialog dialog = new BaseDialog("frog");
-                dialog.cont.add("behold").row();
-                //mod sprites are prefixed with the mod name (this mod is called 'example-java-mod' in its config)
-                dialog.cont.image(Core.atlas.find("example-java-mod-frog")).pad(20f).row();
-                dialog.cont.button("I see", dialog::hide).size(100f, 50f);
-                dialog.show();
-            });
-        });
 
         heat = new TileHeatControl();
         heatOverlay = new TileHeatOverlay();
@@ -41,7 +27,7 @@ public class ForgeMain extends Mod{
         heat.setup = new ExampleHeatSetup();
 
         SaveVersion.addCustomChunk("forge-THC", heat);
-        Events.run(EventType.SaveLoadEvent.class, () -> {
+        Events.run(EventType.WorldLoadEvent.class, () -> {
             heat.start(Vars.world.width(), Vars.world.height());
         });
         

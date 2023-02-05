@@ -5,6 +5,7 @@ import arc.math.Mathf;
 import arc.math.geom.Geometry;
 import arc.struct.IntMap;
 import arc.struct.Seq;
+import arc.util.Log;
 import mindustry.Vars;
 import mindustry.game.EventType;
 import mindustry.io.SaveFileReader;
@@ -30,14 +31,16 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
     private static MaterialPreset tmpMP1 = new MaterialPreset(), tmpMP2 = new MaterialPreset();
 
     //
-    public static MaterialPreset defaultPreset = new MaterialPreset(1, 1);
-    public float simulationSpeed;
+    public static MaterialPreset defaultFloor = new MaterialPreset(1, 1),
+            defaultBlock = new MaterialPreset(0.2f, 3),
+            defaultAir = new MaterialPreset(0.8f, 0.6f);
+    public float simulationSpeed = 1000;
     public static boolean enabled;
 
     private static final ArrayList<MaterialPreset> presetList = new ArrayList<>();
 
     //Used to match up tile indexes with their correct properties. Reinitialized every time the world is loaded.
-    public final IntMap<MaterialPreset> tilePropertyAssociations = new IntMap<>();
+        public final IntMap<MaterialPreset> tilePropertyAssociations = new IntMap<>();
 
     //The array is separated into two parts. The first bit is the floor tiles, and second bit is the block tiles. A floor tile occupies the same tile as a block tile when the index for the floor + s gets to the block
     public float[] energyValues, massValues;
@@ -122,7 +125,7 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
 
                     for (int spanOffset : spanOffsets) {
                         neighbourFlowmap[index + spanOffset][side] = sideIndex + spanOffset;
-                        neighbourFlowmap[index + spanOffset][otherSide] = index + spanOffset;
+                        neighbourFlowmap[sideIndex + spanOffset][otherSide] = index + spanOffset;
                     }
                 }
                 //Set up connections between block and floor tiles
@@ -141,22 +144,47 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
     //Note that ambient heat is factored in after flow calculations
     public void updateFlow()
     {
-        for (int i = 0; i < s; i++) {
+        //Got to loop through every tile here...
+        for (int i = 0; i < s * 2; i++) {
             //Flow values associated with the tile index are stored every second entry in the array, and start halfway through
             for (int j = 5; j < 9; j += 2) {
-                int side = (j -1) * 2;
+                int side = j - 1;
                 int neighbourIndex = (int) neighbourFlowmap[i][side];
                 if(neighbourIndex == -1) continue;
                 int otherSide = (side + 4) % 8;
-                float flow = calculateFlow(massValues[i], massValues[neighbourIndex], celsius(i), celsius(neighbourIndex), tilePropertyAssociations.get(i), tilePropertyAssociations.get(neighbourIndex));
+                float flow = calculateFlow(massValues[i], massValues[neighbourIndex], kelvins(i), kelvins(neighbourIndex), tilePropertyAssociations.get(i), tilePropertyAssociations.get(neighbourIndex));
                 neighbourFlowmap[i][side + 1] = flow;
-                neighbourFlowmap[i][otherSide + 1] = -flow;
+                neighbourFlowmap[neighbourIndex][otherSide + 1] = -flow;
             }
         }
     }
 
     public void updateEnergy(){
+        float currentEnergy = energyValues[s];
+        int[] spanOffsets = new int[]{0, s};
+        for (int i = 0; i < s; i++) {
+            for (int j = 4; j < 8; j += 2) {
+                int neighbourIndex = (int) neighbourFlowmap[i][j];
+                if(neighbourIndex == -1) continue;
 
+                int otherSide = (j + 4) % 8;
+                for (int spanOffset : spanOffsets) {
+                    float flowAmount = neighbourFlowmap[i + spanOffset][j + 1];
+                    //Add 1 to get the associated flow values
+                    energyValues[i + spanOffset] += neighbourFlowmap[i + spanOffset][j + 1] * 0.1f;
+                    energyValues[neighbourIndex + spanOffset] += neighbourFlowmap[neighbourIndex][otherSide + 1] * 0.1f;
+                }
+            }
+            //Todo: Fix
+            /*
+            neighbourFlowmap[i][9] = 0;
+            neighbourFlowmap[i + s][9] = 0;
+
+             */
+
+            energyValues[i] += neighbourFlowmap[i][9];
+            energyValues[i + s] += neighbourFlowmap[i][9];
+        }
     }
 
     public float calculateFlow(float mass1, float mass2, float temp1, float temp2, MaterialPreset preset1, MaterialPreset preset2){
@@ -206,12 +234,20 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
     public float celsius(int index){
         return kelvins(index) - 273.15f;
     }
-    public static float kelvins(float energy, float mass, float SPH){
+    public float kelvins(float energy, float mass, float SPH){
         return energy/(mass*SPH);
     }
 
-    public static float celsius(float energy, float mass, float SPH){
+    public float celsius(float energy, float mass, float SPH){
         return kelvins(energy, mass, SPH) - 273.15f;
+    }
+
+    public float totalFlow(int index){
+        float total = 0;
+        for(int i = 1; i < 10; i += 2){
+            total += Math.abs(neighbourFlowmap[index][i]);
+        }
+        return total;
     }
 
     @Override

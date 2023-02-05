@@ -9,8 +9,9 @@ import static forge.ForgeMain.heat;
 
 public class TileHeatOverlay {
     public void draw(){
+        if(heat.tilePropertyAssociations.size <= 0) return;
         for (int i = 0; i < heat.s; i++) {
-            float temp = heat.kelvins(i);
+            float temp = heat.totalFlow(i + heat.s)/10;
 
 
             /*
@@ -25,7 +26,7 @@ public class TileHeatOverlay {
             float g = Interp.Pow.slope.apply(Math.max(1 - temp/573.15f, 0));
             float r = Math.max((temp-313.15f)/1273.15f, 0);
             Draw.color(Tmp.c1.set(r, g, b, 0.15f));
-            Fill.square((i % heat.w) * 8, ((int) (i / heat.w)) * 8, 8);
+            Fill.square((i % heat.w) * 8, ((int) (i / heat.w)) * 8, 4);
         }
     }
 }
