@@ -51,6 +51,8 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
 
     public int w, h, s;
 
+    int[] spanOffsets;
+
     public void setTileValues(int index, float energy, float mass, MaterialPreset preset){
         energyValues[index] = energy;
         massValues[index] = mass;
@@ -106,7 +108,7 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
         energyValues = new float[s * 2];
         massValues = new float[s * 2];
         neighbourFlowmap = new float[s * 2][10];
-        int[] spanOffsets = new int[]{0, s};
+        spanOffsets = new int[]{0, s};
 
         //Set up neighbours
         for (int x = 0; x < w; x++) {
@@ -145,42 +147,35 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
     public void updateFlow()
     {
         //Got to loop through every tile here...
-        for (int i = 0; i < s * 2; i++) {
+        for (int i = 0; i < s; i++) {
             //Flow values associated with the tile index are stored every second entry in the array, and start halfway through
             for (int j = 5; j < 9; j += 2) {
                 int side = j - 1;
                 int neighbourIndex = (int) neighbourFlowmap[i][side];
                 if(neighbourIndex == -1) continue;
                 int otherSide = (side + 4) % 8;
-                float flow = calculateFlow(massValues[i], massValues[neighbourIndex], kelvins(i), kelvins(neighbourIndex), tilePropertyAssociations.get(i), tilePropertyAssociations.get(neighbourIndex));
-                neighbourFlowmap[i][side + 1] = flow;
-                neighbourFlowmap[neighbourIndex][otherSide + 1] = -flow;
+                for (int spanOffset : spanOffsets) {
+                    float flow = calculateFlow(massValues[i + spanOffset], massValues[neighbourIndex + spanOffset], kelvins(i + spanOffset), kelvins(neighbourIndex + spanOffset), tilePropertyAssociations.get(i + spanOffset), tilePropertyAssociations.get(neighbourIndex + spanOffset));
+
+                    neighbourFlowmap[i + spanOffset][side + 1] = flow;
+                    neighbourFlowmap[neighbourIndex + spanOffset][otherSide + 1] = -flow;
+                }
             }
         }
     }
 
     public void updateEnergy(){
         float currentEnergy = energyValues[s];
-        int[] spanOffsets = new int[]{0, s};
         for (int i = 0; i < s; i++) {
-            for (int j = 4; j < 8; j += 2) {
-                int neighbourIndex = (int) neighbourFlowmap[i][j];
-                if(neighbourIndex == -1) continue;
+            for (int j = 0; j < 8; j += 2) {
 
                 int otherSide = (j + 4) % 8;
                 for (int spanOffset : spanOffsets) {
-                    float flowAmount = neighbourFlowmap[i + spanOffset][j + 1];
                     //Add 1 to get the associated flow values
                     energyValues[i + spanOffset] += neighbourFlowmap[i + spanOffset][j + 1] * 0.1f;
-                    energyValues[neighbourIndex + spanOffset] += neighbourFlowmap[neighbourIndex][otherSide + 1] * 0.1f;
                 }
             }
             //Todo: Fix
-            /*
-            neighbourFlowmap[i][9] = 0;
-            neighbourFlowmap[i + s][9] = 0;
-
-             */
 
             energyValues[i] += neighbourFlowmap[i][9];
             energyValues[i + s] += neighbourFlowmap[i][9];

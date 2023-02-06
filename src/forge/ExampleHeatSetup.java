@@ -14,7 +14,7 @@ public class ExampleHeatSetup extends TileHeatSetup{
             //Log.info("X: " + i % heat.w + ", Y: " + Math.floor(i/heat.w));
             boolean solid = Vars.world.tile(i % heat.w, (int) Math.floor(i/heat.w)).solid();
             heat.setTileValues(i, heat.ambientTemperature * 1000, 1000, TileHeatControl.defaultFloor);
-            heat.setTileValues(i + heat.s, heat.ambientTemperature * 1000, solid ? 10000 : 1000, solid ? TileHeatControl.defaultBlock : TileHeatControl.defaultAir);
+            heat.setTileValues(i + heat.s, heat.ambientTemperature * (solid ? 10000 * TileHeatControl.defaultBlock.specificHeatCapacity : 1000 * TileHeatControl.defaultAir.specificHeatCapacity), solid ? 10000 : 1000, solid ? TileHeatControl.defaultBlock : TileHeatControl.defaultAir);
         }
     }
 
@@ -24,9 +24,9 @@ public class ExampleHeatSetup extends TileHeatSetup{
         int index =(int) (Math.floor(Tmp.v1.x/8) + Math.floor(Tmp.v1.y/8) * heat.w);
         heat.energyValues[index] += heat.massValues[index] * heat.tilePropertyAssociations.get(index).specificHeatCapacity * 2;
 
-        Tmp.v1.set(Core.input.mouseWorld());
-        index =(int) (Math.floor(Tmp.v1.x/8) + Math.floor(Tmp.v1.y/8) * heat.w);
-        if(index < 0) return;
-        Log.info("Flow stats for tile cursor is on:\nTemp:" + heat.celsius(index) + heat.s + "\nFlow total:" + heat.totalFlow(index + heat.s));
+        //Tmp.v1.set(Core.input.mouseWorld());
+        //index =(int) (Math.floor(Tmp.v1.x/8) + Math.floor(Tmp.v1.y/8) * heat.w);
+        //if(index < 0) return;
+        //Log.info("Flow stats for tile cursor is on:\nTemp:" + heat.celsius(index + heat.s) + "\nFlow total:" + heat.totalFlow(index + heat.s));
     }
 }
