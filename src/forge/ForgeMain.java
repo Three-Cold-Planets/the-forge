@@ -1,24 +1,28 @@
 package forge;
 
 import arc.*;
-import arc.graphics.g2d.Draw;
+import arc.graphics.gl.FrameBuffer;
 import arc.struct.Seq;
 import arc.util.*;
+import forge.TileHeatControl.HeatState;
 import mindustry.*;
 import mindustry.game.EventType;
 import mindustry.game.EventType.*;
-import mindustry.graphics.Layer;
 import mindustry.io.SaveVersion;
 import mindustry.mod.*;
-import mindustry.ui.dialogs.*;
 import rhino.ImporterTopLevel;
 import rhino.NativeJavaPackage;
+
+import static forge.TileHeatControl.kelvins;
 
 public class ForgeMain extends Mod{
 
     public static TileHeatControl heat;
     public static TileHeatOverlay heatOverlay;
     public static NativeJavaPackage p;
+
+    public static FrameBuffer effectBuffer;
+    public static HeatmapShader heatShader;
     public ForgeMain(){
 
         heat = new TileHeatControl();
@@ -27,17 +31,22 @@ public class ForgeMain extends Mod{
         heat.setup = new ExampleHeatSetup();
 
         SaveVersion.addCustomChunk("forge-THC", heat);
+
+        heat.setup.initialize(heat);
         Events.run(EventType.WorldLoadEvent.class, () -> {
             heat.start(Vars.world.width(), Vars.world.height());
         });
-        
-        Events.run(Trigger.draw, () -> {
-            Draw.draw(Layer.overlayUI, heatOverlay::draw);
-        });
 
-        Events.run(Trigger.update, () -> {
-            if(!Vars.state.isPlaying()) return;
-            heat.tick(Time.delta);
+        Events.run(FileTreeInitEvent.class, () -> {
+            Core.app.post(() -> {
+                effectBuffer = new FrameBuffer(Core.graphics.getWidth(), Core.graphics.getHeight());
+                try {
+                    heatShader = new HeatmapShader("heat");
+                }
+                catch (IllegalArgumentException error){
+                    Log.err("Failed to load Heat shader: " + error);
+                }
+            });
         });
     }
 
