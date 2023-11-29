@@ -33,9 +33,9 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
     static HeatState tmpS1;
 
     //Ambient Temperature in celsius
-    public float ambientTemperature = 303.15f,
-    //Rate at which non-shielded block's energy changes toward the ambient temp in kelvins
-    envTempChange = 0.01f;
+    public static float ambientTemperature = 303.15f,
+    //How conductive the atmosphere is
+    envTempChange = 0.3f;
 
     public static MaterialPreset tmpMP1 = new MaterialPreset(), tmpMP2 = new MaterialPreset();
 
@@ -130,7 +130,7 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
             }
         }
 
-        //Setup neighbours
+        //Setup neighbours. Being rewritten to account for multiblocks soon.
         for (int i = 0; i < s; i++) {
             HeatState current = gridStates.get(i);
             //Starts halfway in 2 in to maintain update order. Tiles should update against the direction iteration is going in to avoid needing to iterating over flow values a second time.
@@ -158,6 +158,8 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
         gridStates.each(HeatState::updateState);
         entityStates.each(HeatState::updateState);
     }
+
+    //Note that this ignores surface area. That logic should be implemented in the object calling this
     public static float calculateFlow(float mass1, float mass2, float temp1, float temp2, MaterialPreset preset1, MaterialPreset preset2){
 
         //Debug.Log("Going from tile: " + tile1 + " to " + tile2);
@@ -169,35 +171,39 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
 
         float tempretureDif = temp2 - temp1;
 
-        //Debug.Log("Starting tempretures are " + tile1.energy + " and " + tile2.energy);
-
-        //Debug.Log("Tempreture difference is: " + tempretureDif);
-
         //Don't bother calculating if tempreture difference is less than 1 celcius
         if (Math.abs(tempretureDif) < 1f) {
             return 0;
         }
 
         float geomThermalConductivity = Mathf.sqrt(preset1.thermalConductivity * preset2.thermalConductivity);
-
-
         float flowAmount = geomThermalConductivity * tempretureDif * simulationSpeed;
-
-        //Debug.Log(flowAmount);
 
         //Don't bother using if energy flow is less than 0.1 units
         if (Math.abs(flowAmount) < 0.1f) return 0;
-
 
         //Cap change of energy to 1/5 of the temp difference changed per tick
         float maxTempDif = Math.min(Math.abs(tempretureDif/5 * mass1 * preset1.specificHeatCapacity),
                 Math.abs(tempretureDif / 5 * mass2 * preset2.specificHeatCapacity));
 
-        //Debug.Log("Flow amount is " + flowAmount + " with max of " + maxTempDif);
-        //Debug.Log("Flow is " + Mathf.Clamp(flowAmount, -maxTempDif, maxTempDif));
-
         return Mathf.clamp(flowAmount, -maxTempDif, maxTempDif);
     }
+
+    //Note that this assumes all "faces" are uniformly sized and in constant contact with the atmosphere for the full duration between heat ticks. Accounting for this would add unescecery bloat to this relatively simple method.
+    public static float calculateFlowAtmosphere(float mass, float temp, MaterialPreset preset, int faces){
+        
+        float tempretureDif = ambientTemperature - temp;
+        float geomThermalConductivity = Mathf.sqrt(preset1.thermalConductivity * envTempChange);
+        //Simple change allowing faces to act as a multiplier, while still being clamped in the result.
+        float flowAmount = geomThermalConductivity * tempretureDif * faces * simulationSpeed;
+        
+        //Cap change of energy to 1/5 of the temp difference changed per tick based only on the mass interacting with the atmosphere.
+        float maxTempDif = Math.abs(tempretureDif/5 * mass1 * preset1.specificHeatCapacity);
+
+        
+        return Mathf.clamp(flowAmount, -maxTempDif, maxTempDif);
+    }
+    
     public void initializeValues(){
 
     }
@@ -252,6 +258,8 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
         }
         public float energy, mass, flow, lastFlow;
 
+        public int faces;
+
         public boolean shielded;
         
         public MaterialPreset material;
@@ -261,7 +269,7 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
 
         public void updateState(){
             
-            if(!shielded) flow = Mathf.lerp(energy, mass * ambientTemperature, envTempChange) - energy;
+            if(!shielded) flow = calculateFlowAtmosphere(mass, kelvins(this), material, faces);
             
             updates.each(n -> {
                 float flow = calculateFlow(mass, n.mass, kelvins(this), kelvins(n), material, n.material);
