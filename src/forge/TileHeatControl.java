@@ -73,6 +73,13 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
         tmpS1.material = material;
     }
     public static class MaterialPreset{
+        public float
+                //How conductive the material is. More Thermal Conductivity means more flow of heat between the tile and it's neighbours.
+                // Conductivity works on averages, so something with almost no conductivity next to something with high conductivity will still conduct heat.
+                thermalConductivity,
+                //How much energy it takes to raise one unit of mass one kelvin. This one is self-explanatory.
+                specificHeatCapacity;
+        
         public MaterialPreset(){
 
         }
@@ -81,12 +88,6 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
             this.thermalConductivity = thermalConductivity;
             this.specificHeatCapacity = specificHeatCapacity;
         }
-        public float
-                //How conductive the material is. More Thermal Conductivity means more flow of heat between the tile and it's neighbours.
-                // Conductivity works on averages, so something with almost no conductivity next to something with high conductivity will still conduct heat.
-                thermalConductivity,
-                //How much energy it takes to raise one unit of mass one kelvin. This one is self-explanatory.
-                specificHeatCapacity;
     }
 
     public void start(int width, int height){
@@ -251,12 +252,17 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
         }
         public float energy, mass, flow, lastFlow;
 
+        public boolean shielded;
+        
         public MaterialPreset material;
 
         //Note: Update order is important
         public Seq<HeatState> updates;
 
         public void updateState(){
+            
+            if(!shielded) flow = Mathf.lerp(energy, mass * ambientTemperature, envTempChange) - energy;
+            
             updates.each(n -> {
                 float flow = calculateFlow(mass, n.mass, kelvins(this), kelvins(n), material, n.material);
 
