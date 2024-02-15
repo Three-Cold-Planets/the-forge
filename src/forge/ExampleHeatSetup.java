@@ -3,15 +3,16 @@ package forge;
 import arc.Events;
 import arc.graphics.g2d.Draw;
 import arc.math.Mathf;
-import arc.math.geom.Geometry;
+import arc.util.Log;
 import arc.util.Time;
 import arc.util.Tmp;
-import forge.TileHeatControl.HeatState;
+import forge.TileHeatControl.GridHeatState;
 import mindustry.Vars;
 import mindustry.content.Fx;
 import mindustry.game.EventType;
 import mindustry.gen.Building;
 import mindustry.graphics.Layer;
+import mindustry.world.Tile;
 
 import static forge.ForgeMain.heatOverlay;
 import static forge.TileHeatControl.*;
@@ -23,20 +24,31 @@ public class ExampleHeatSetup extends TileHeatSetup{
     @Override
     void setupGrid(TileHeatControl heat) {
         for (int i = 0; i < heat.s; i++) {
-            boolean solid = Vars.world.tile(i % heat.w, (int) Math.floor(i/heat.w)).solid();
-            heat.setTileValues(i, heat.ambientTemperature * (solid ? 10 * defaultBlock.specificHeatCapacity : 1 * defaultFloor.specificHeatCapacity), solid ? 10 : 1, solid ? defaultBlock : defaultFloor);
+            int x = i % heat.w,y = (int) Math.floor(i/heat.w);
+            GridTile tile = heat.getTile(x, y);
+            boolean solid = Vars.world.tile(x, y).solid();
+
+            tile.floor.setStats(heat.ambientTemperature * defaultFloor.specificHeatCapacity, 4, defaultBlock);
+            tile.floor.enabled = true;
+            tile.block.setStats(heat.ambientTemperature * defaultBlock.specificHeatCapacity, 20, defaultBlock);
+            if(solid){
+                tile.block.enabled = true;
+                tile.solid = true;
+            }
+            tile.air.setStats(heat.ambientTemperature, 1, defaultAir);
+            tile.air.enabled = true;
         }
+        Log.info("Grid finalized!");
     }
 
     @Override
     void update(TileHeatControl heat) {
-        Tmp.v1.set(Vars.player);
-        Fx.smoke.at(Tmp.v1.x, Tmp.v1.y);
-        int index =(int) (Math.floor(Tmp.v1.x/8) + Math.floor(Tmp.v1.y/8) * heat.w);
-        Tmp.v2.set((index/8 % heat.w) * 8, Mathf.floor(index/8) * heat.w * 8);
-        Fx.smoke.at(Tmp.v2.x, Tmp.v2.y);
-        if(index >= heat.s || index < 0) return;
-        gridStates.get(index).flow += 750;
+        Tile current = Vars.player.tileOn();
+        GridTile tile = heat.getTile(current.x, current.y);
+        if(tile != null) {
+            tile.top().flow += 750;
+        }
+        Log.info("Engine go ", current.x, current.y);
     }
 
     @Override
@@ -62,6 +74,7 @@ public class ExampleHeatSetup extends TileHeatSetup{
                 }
             }
         });
+
         //on tile removed
         Events.on(EventType.TilePreChangeEvent.class, event -> {
             if(heat.gridLoaded){
@@ -80,8 +93,9 @@ public class ExampleHeatSetup extends TileHeatSetup{
 
     public void updateTerrain(int x, int y){
         boolean solid = Vars.world.tile(x, y).solid();
-        int index = x + y * heat.w;
-        HeatState state = gridStates.get(index);
+        GridTile tile = heat.getTile(x, y);
+        tile.solid = solid;
+        GridHeatState state = tile.block;
         state.mass = solid ? 10 : 1;
         state.material = solid ? defaultBlock : defaultFloor;
     };

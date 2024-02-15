@@ -4,7 +4,6 @@ import arc.*;
 import arc.graphics.gl.FrameBuffer;
 import arc.struct.Seq;
 import arc.util.*;
-import forge.TileHeatControl.HeatState;
 import mindustry.*;
 import mindustry.game.EventType;
 import mindustry.game.EventType.*;
@@ -34,7 +33,7 @@ public class ForgeMain extends Mod{
 
         heat.setup.initialize(heat);
         Events.run(EventType.WorldLoadEvent.class, () -> {
-            heat.start(Vars.world.width(), Vars.world.height());
+            if(!Vars.state.isEditor()) heat.start(Vars.world.width(), Vars.world.height());
         });
 
         Events.run(FileTreeInitEvent.class, () -> {

@@ -15,11 +15,11 @@ import static forge.TileHeatControl.kelvins;
 public class TileHeatOverlay {
     public void draw(){
         for (int i = 0; i < heat.s; i++) {
-            Tmp.v1.set((i % heat.w) * Vars.tilesize, (int) (i / heat.w) * Vars.tilesize);
+            Tmp.v1.set((i % heat.w) * Vars.tilesize, (i / heat.w) * Vars.tilesize);
             Core.camera.bounds(Tmp.r1);
             if(!Tmp.r2.setCentered(Tmp.v1.x, Tmp.v1.y, Vars.tilesize).overlaps(Tmp.r1)) continue;
 
-            float temp = kelvins(TileHeatControl.gridStates.get(i));
+            float temp = kelvins(TileHeatControl.gridTiles.get(i).top());
 
             /*
             Ranges for colors
