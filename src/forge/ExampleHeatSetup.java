@@ -44,6 +44,7 @@ public class ExampleHeatSetup extends TileHeatSetup{
     @Override
     void update(TileHeatControl heat) {
         Tile current = Vars.player.tileOn();
+        if(current == null) return;
         GridTile tile = heat.getTile(current.x, current.y);
         if(tile != null) {
             tile.top().flow += 750;
@@ -95,9 +96,7 @@ public class ExampleHeatSetup extends TileHeatSetup{
         boolean solid = Vars.world.tile(x, y).solid();
         GridTile tile = heat.getTile(x, y);
         tile.solid = solid;
-        GridHeatState state = tile.block;
-        state.mass = solid ? 10 : 1;
-        state.material = solid ? defaultBlock : defaultFloor;
+        tile.block.enabled = solid;
     };
 
     public void updateBuildTerrain(Building b){

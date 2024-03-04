@@ -19,7 +19,7 @@ public class TileHeatOverlay {
             Core.camera.bounds(Tmp.r1);
             if(!Tmp.r2.setCentered(Tmp.v1.x, Tmp.v1.y, Vars.tilesize).overlaps(Tmp.r1)) continue;
 
-            float temp = kelvins(TileHeatControl.gridTiles.get(i).top());
+            float temp = kelvins(TileHeatControl.gridTiles[i].top());
 
             /*
             Ranges for colors
