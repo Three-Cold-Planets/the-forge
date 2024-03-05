@@ -2,29 +2,25 @@ package forge;
 
 import arc.Events;
 import arc.graphics.g2d.Draw;
-import arc.math.Mathf;
 import arc.util.Log;
 import arc.util.Time;
-import arc.util.Tmp;
-import forge.TileHeatControl.GridHeatState;
 import mindustry.Vars;
-import mindustry.content.Fx;
 import mindustry.game.EventType;
 import mindustry.gen.Building;
 import mindustry.graphics.Layer;
 import mindustry.world.Tile;
 
 import static forge.ForgeMain.heatOverlay;
-import static forge.TileHeatControl.*;
+import static forge.HeatControl.*;
 import static mindustry.Vars.state;
 
 //Example of a setup class
-public class ExampleHeatSetup extends TileHeatSetup{
-    TileHeatControl heat;
+public class HeatSetup implements TileHeatSetup{
+    HeatControl heat;
     @Override
-    void setupGrid(TileHeatControl heat) {
+    public void setupGrid(HeatControl heat) {
         for (int i = 0; i < heat.s; i++) {
-            int x = i % heat.w,y = (int) Math.floor(i/heat.w);
+            int x = i % heat.width,y = (int) Math.floor(i/heat.width);
             GridTile tile = heat.getTile(x, y);
             boolean solid = Vars.world.tile(x, y).solid();
 
@@ -43,7 +39,7 @@ public class ExampleHeatSetup extends TileHeatSetup{
     }
 
     @Override
-    void update(TileHeatControl heat) {
+    public void update(HeatControl heat) {
         Tile current = Vars.player.tileOn();
         if(current == null) return;
         GridTile tile = heat.getTile(current.x, current.y);
@@ -53,10 +49,9 @@ public class ExampleHeatSetup extends TileHeatSetup{
     }
 
     @Override
-    void initialize(TileHeatControl heat) {
+    public void initialize(HeatControl heat) {
 
         this.heat = heat;
-
         Events.run(EventType.Trigger.update, () -> {
             if (state.isGame() && !state.isPaused()) {
                     if (heat.heatThread == null) {

@@ -12,11 +12,11 @@ import mindustry.mod.*;
 import rhino.ImporterTopLevel;
 import rhino.NativeJavaPackage;
 
-import static forge.TileHeatControl.kelvins;
+import static forge.HeatControl.kelvins;
 
 public class ForgeMain extends Mod{
 
-    public static TileHeatControl heat;
+    public static HeatControl heat;
     public static TileHeatOverlay heatOverlay;
     public static NativeJavaPackage p;
 
@@ -24,10 +24,10 @@ public class ForgeMain extends Mod{
     public static HeatmapShader heatShader;
     public ForgeMain(){
 
-        heat = new TileHeatControl();
+        heat = new HeatControl();
         heatOverlay = new TileHeatOverlay();
 
-        heat.setup = new ExampleHeatSetup();
+        heat.setup = new HeatSetup();
 
         SaveVersion.addCustomChunk("forge-THC", heat);
 

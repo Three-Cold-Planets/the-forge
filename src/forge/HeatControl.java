@@ -5,8 +5,6 @@ import arc.math.Mathf;
 import arc.math.geom.Geometry;
 import arc.struct.*;
 import arc.util.Log;
-import mindustry.Vars;
-import mindustry.content.Fx;
 import mindustry.gen.Call;
 import mindustry.io.SaveFileReader;
 
@@ -17,16 +15,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 //Class which stores and controls the heat in both blocks and floors and their flow.
-public class TileHeatControl implements SaveFileReader.CustomChunk {
+public class HeatControl implements SaveFileReader.CustomChunk {
 
-    static TileHeatControl instance;
+    static HeatControl instance;
 
-    public static TileHeatControl get() {
-        if (instance == null) instance = new TileHeatControl();
+    public static HeatControl get() {
+        if (instance == null) instance = new HeatControl();
         return instance;
     }
 
-    public TileHeatControl(){
+    public HeatControl(){
 
     }
 
@@ -51,7 +49,7 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
     public static float simulationSpeed = 1;
     public static boolean enabled;
 
-    public boolean gridLoaded = false;
+    public static boolean gridLoaded = false;
 
     private static final ArrayList<MaterialPreset> presetList = new ArrayList<>();
 
@@ -68,7 +66,7 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
     public static HeatRunnerThread heatThread;
 
     //Width, height and size of the world
-    public static int w, h, s,
+    public static int width, height, s,
     //Width and height of the chunk sections
     chunkW, chunkH;
 
@@ -79,34 +77,33 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
 
     public static int disabledTimer = 10;
 
-    public void setupThread(){
-        heatThread = new TileHeatControl.HeatRunnerThread();
+    public static void setupThread(){
+        heatThread = new HeatControl.HeatRunnerThread();
         heatThread.setPriority(Thread.NORM_PRIORITY - 1);
         heatThread.setDaemon(true);
         heatThread.start();
         Log.info("Started Heat Threat");
     }
 
-    public void start(int width, int height){
+    public static void start(int width, int height){
         Log.info("Starting Heat!");
-        initializeValues();
         createGrid(width, height);
-        setup.setupGrid(this);
+        setup.setupGrid(get());
         gridLoaded = true;
     }
 
-    public GridTile getTile(int x, int y){
-        if(x < 0 || y < 0 || x >= w || y >= h) return null;
-        return gridTiles[x + y * w];
+    public static GridTile getTile(int x, int y){
+        if(x < 0 || y < 0 || x >= width || y >= height) return null;
+        return gridTiles[x + y * width];
     }
 
     @Deprecated
-    public GridTile getTile(int index){
+    public static GridTile getTile(int index){
         return gridTiles[index];
     }
-    public void createGrid(int w, int h){
-        this.w = w;
-        this.h = h;
+    public static void createGrid(int w, int h){
+        width = w;
+        height = h;
 
         s = w * h;
         gridTiles = new GridTile[s];
@@ -125,7 +122,7 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
                 int width = x == chunkW - 1 ? chunkSize - Mathf.mod(w, chunkSize) : chunkSize;
                 int height = y == chunkH - 1 ? chunkSize - Mathf.mod(w, chunkSize) : chunkSize;
 
-                Chunk current = new Chunk(x * chunkSize, y * chunkSize, width, height, EnableState.ENABLE);
+                Chunk current = new Chunk(x * chunkSize, y * chunkSize, width, height, EnableState.ENABLED);
                 gridChunks[x + y * chunkW] = current;
             }
         }
@@ -154,15 +151,15 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
         Log.info("Grid created!");
     }
 
-    public void tick(){
+    public static void tick(){
         //Log.info("Ticking");
         updateFlow();
-        setup.update(this);
+        setup.update(get());
         finalizeEnergy();
     }
 
     //Note that ambient heat is factored in after flow calculations
-    public void updateFlow()
+    public static void updateFlow()
     {
         for (Chunk gridChunk : gridChunks) {
             gridChunk.update();
@@ -173,7 +170,7 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
         //entityStates.each(GridHeatState::updateState);
     }
 
-    public void finalizeEnergy()
+    public static void finalizeEnergy()
     {
         for (Chunk chunk : gridChunks) {
             chunk.finalizeEnergy();
@@ -226,10 +223,6 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
 
         
         return Mathf.clamp(flowAmount, -maxTempDif, maxTempDif);
-    }
-    
-    public void initializeValues(){
-
     }
     public static float kelvins(HeatState state){
         return state.temperature;
@@ -428,7 +421,7 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
          */
         public void update(){
 
-            if(!state.force) state = disabledCounter < disabledTimer ? EnableState.ENABLE : EnableState.DISABLED;
+            if(!state.force) state = disabledCounter < disabledTimer ? EnableState.ENABLED : EnableState.DISABLED;
 
             //If chunk is disabled, blocks inside won't update neighbours, but neighbours can still update them
             if(!state.enabled) return;
@@ -479,7 +472,7 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
 
     //Coppied from Xelo, yoinky~
     //I swear I  half understand how it works
-    public class HeatRunnerThread extends Thread {
+    public static class HeatRunnerThread extends Thread {
         boolean terminate, doStep;
         public int currentTime;
         public float targetTime;
@@ -532,7 +525,7 @@ public class TileHeatControl implements SaveFileReader.CustomChunk {
     };
 
     public enum EnableState{
-        FORCE_ENABLE(true, true), ENABLE(true, false), DISABLED(false, false), FORCE_DISABLE(false, true);
+        FORCE_ENABLE(true, true), ENABLED(true, false), DISABLED(false, false), FORCE_DISABLE(false, true);
         final boolean enabled;
         final boolean force;
 

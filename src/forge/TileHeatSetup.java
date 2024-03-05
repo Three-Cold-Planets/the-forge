@@ -1,9 +1,9 @@
 package forge;
 
-public abstract class TileHeatSetup {
-    abstract void setupGrid(TileHeatControl heat);
-    abstract void update(TileHeatControl heat);
+public interface TileHeatSetup {
+    void setupGrid(HeatControl heat);
+    void update(HeatControl heat);
 
     //Called to start the simulation
-    abstract void initialize(TileHeatControl heat);
+    void initialize(HeatControl heat);
 }
