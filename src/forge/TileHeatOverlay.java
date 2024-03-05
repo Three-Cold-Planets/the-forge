@@ -1,25 +1,37 @@
 package forge;
 
 import arc.Core;
+import arc.graphics.Color;
 import arc.graphics.g2d.Draw;
 import arc.graphics.g2d.Fill;
+import arc.graphics.g2d.Lines;
 import arc.math.Interp;
 import arc.math.Mathf;
 import arc.util.Log;
 import arc.util.Tmp;
 import mindustry.Vars;
+import mindustry.graphics.Pal;
 
 import static forge.ForgeMain.heat;
+import static forge.TileHeatControl.enabled;
 import static forge.TileHeatControl.kelvins;
 
 public class TileHeatOverlay {
     public void draw(){
+
+        for (TileHeatControl.Chunk chunk: TileHeatControl.gridChunks) {
+            if (chunk.state.enabled) Draw.color(Color.white);
+            else Draw.color(Color.red, Pal.remove, Mathf.absin(30, 1));
+            Lines.stroke(0.5f + (enabled ? Mathf.absin(1.5f, 1) : 0.5f));
+            Lines.rect(chunk.x * Vars.tilesize, chunk.y * Vars.tilesize, TileHeatControl.chunkSize * Vars.tilesize, TileHeatControl.chunkSize * Vars.tilesize);
+        }
+
         for (int i = 0; i < heat.s; i++) {
             Tmp.v1.set((i % heat.w) * Vars.tilesize, (i / heat.w) * Vars.tilesize);
             Core.camera.bounds(Tmp.r1);
             if(!Tmp.r2.setCentered(Tmp.v1.x, Tmp.v1.y, Vars.tilesize).overlaps(Tmp.r1)) continue;
 
-            float temp = kelvins(TileHeatControl.gridTiles[i].top());
+            float temp = TileHeatControl.gridTiles[i].top().temperature;
 
             /*
             Ranges for colors

@@ -28,15 +28,16 @@ public class ExampleHeatSetup extends TileHeatSetup{
             GridTile tile = heat.getTile(x, y);
             boolean solid = Vars.world.tile(x, y).solid();
 
-            tile.floor.setStats(heat.ambientTemperature * defaultFloor.specificHeatCapacity, 4, defaultBlock);
+            tile.floor.setStats(4, defaultFloor);
             tile.floor.enabled = true;
-            tile.block.setStats(heat.ambientTemperature * defaultBlock.specificHeatCapacity, 20, defaultBlock);
+            tile.block.setStats(20, defaultBlock);
             if(solid){
                 tile.block.enabled = true;
                 tile.solid = true;
             }
-            tile.air.setStats(heat.ambientTemperature, 1, defaultAir);
+            tile.air.setStats(1, defaultAir);
             tile.air.enabled = true;
+            tile.floor.temperature = tile.block.temperature = tile.air.temperature = heat.ambientTemperature;
         }
         Log.info("Grid finalized!");
     }
@@ -49,7 +50,6 @@ public class ExampleHeatSetup extends TileHeatSetup{
         if(tile != null) {
             tile.top().flow += 750;
         }
-        Log.info("Engine go ", current.x, current.y);
     }
 
     @Override
@@ -88,7 +88,7 @@ public class ExampleHeatSetup extends TileHeatSetup{
         });
 
         Events.run(EventType.Trigger.draw, () -> {
-            if(state.isGame() && heat.gridLoaded) Draw.draw(Layer.power + 1, heatOverlay::draw);
+            if(state.isGame() && heat.gridLoaded) Draw.draw(Layer.darkness + 1, heatOverlay::draw);
         });
     }
 
